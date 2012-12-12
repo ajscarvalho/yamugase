@@ -11,23 +11,26 @@ require('./utils/error');
 /** @constructor */
 Yamugase = function(){ this.init(); };
 
-require('./Config');
 require('./Player');
 require('./Game');
+require('./EventProcessor');
 
 Yamugase.prototype.className = 'Yamugase';
 Yamugase.prototype.httpServer = null;
 Yamugase.prototype.websocketServer = null;
 Yamugase.prototype.connections = {};
 Yamugase.prototype.games = {};
+Yamugase.prototype.config = null;
 
-Yamugase.prototype.init = function()
+Yamugase.prototype.init = function(config)
 {
+	this.config = config;
+
 	this.httpServer = http.createServer(this.httpRequestHandler.bind(this));
-	this.httpServer.listen(Yamugase.Config.WEBSERVER_PORT);
+	this.httpServer.listen(config.WEBSERVER_PORT);
 
 	this.websocketServer = WebSocketServer.createServer(this.websocketConnected.bind(this));
-	this.websocketServer.listen(Yamugase.Config.WEBSOCKET_PORT);
+	this.websocketServer.listen(config.WEBSOCKET_PORT);
 
 	this.clearHttpClients(); // cycle checking clients for timeout events
 };
@@ -130,8 +133,9 @@ console.log('Error on websocket', websocket);
  */
 Yamugase.prototype.clearHttpClients = function()
 {
+//console.log("connections", this.connections);
 	for(var id in this.connections)
-		if (this.connections[id].expired())
+		if (this.connections[id].expired(this.config))
 			this.deleteClient(id);
 
 	setTimeout(this.clearHttpClients.bind(this), 1000);
@@ -163,8 +167,8 @@ console.log('dropped client', id);
 
 Yamugase.prototype.addClient = function(player)
 {
-	if(this.connections[player._internalId]) return player.send(game_error('DuplicatePlayer'));
-	this.connections[player._internalId] = player;
+	if(this.connections[player._internal_id]) return player.send(game_error('DuplicatePlayer'));
+	this.connections[player._internal_id] = player;
 };
 
 /**

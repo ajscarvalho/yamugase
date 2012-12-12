@@ -14,5 +14,9 @@ or you can allways do
 require(Yamugase/utils/object);
 
 object_extend(A, Yamugase.B);
-A.prototype.XPTO = function(){...};
+A.prototype.XPTO = function(){
+  ...
+  A.parent_XPTO(); // calling parent's function
+};
 B = A;
+
