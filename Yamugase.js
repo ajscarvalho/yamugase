@@ -3,13 +3,13 @@ var http = require('http');
 var ws = require('./websocket/websocket_server');
 
 
+/** @constructor */
+Yamugase = function(){ this.init(); };
+
 require('./utils/XML');
 require('./utils/UUID');
 require('./utils/error');
 
-
-/** @constructor */
-Yamugase = function(){ this.init(); };
 
 require('./Player');
 require('./Game');
@@ -20,10 +20,15 @@ Yamugase.prototype.httpServer = null;
 Yamugase.prototype.websocketServer = null;
 Yamugase.prototype.connections = {};
 Yamugase.prototype.games = {};
+Yamugase.prototype.gameTypes = {};
 Yamugase.prototype.config = null;
 
 Yamugase.prototype.init = function(config)
 {
+	this.connections = {};
+	this.games = {};
+	this.gameTypes = {};
+
 	this.config = config;
 
 	this.httpServer = http.createServer(this.httpRequestHandler.bind(this));
@@ -33,6 +38,7 @@ Yamugase.prototype.init = function(config)
 	this.websocketServer.listen(config.WEBSOCKET_PORT);
 
 	this.clearHttpClients(); // cycle checking clients for timeout events
+	this.clearEmptyGames(); // cycle checking empty games and dropping them
 };
 
 
@@ -50,17 +56,24 @@ Yamugase.prototype.httpRequestHandler = function(request, response)
 	if (!player) this.addClient(player = new Player());
 
 	var res = EventProcessor.processAction(this, action, player, params);
+	if (null == res)
+	{
+		console.warn('null value returned from action', action, params);
+		response.writeHead(200);
+		return;
+	}
+
 	if (request.url.match(/\?xml$/))
 	{
 		contentType = 'text/xml';
-		if (action == 'pull') events = Yamugase.XML.convertFromJSO(player.getEvents());
-		else events = Yamugase.XML.convertFromJSO(res);
+		if (action == 'pull') events = Yamugase.XML.convertFromJSONList(player.getEvents());
+		else events = Yamugase.XML.convertFromJSONResponse(res);
 	}
 	else
 	{
 		contentType = 'application/json‎';
-		if (action == 'pull') events = JSON.stringify(player.getEvents());
-		else events = JSON.stringify(res);
+		if (action == 'pull') events = '[' + player.getEvents().join(',') + ']';
+		else events = res;
 	}
 
 	response.writeHead(200, {'Content-Type': contentType});
@@ -132,7 +145,7 @@ console.log('Error on websocket', websocket);
  * Drop Connections 
  */
 Yamugase.prototype.clearHttpClients = function()
-{
+{;
 //console.log("connections", this.connections);
 	for(var id in this.connections)
 		if (this.connections[id].expired(this.config))
@@ -171,6 +184,30 @@ Yamugase.prototype.addClient = function(player)
 	this.connections[player._internal_id] = player;
 };
 
+
+
+/************
+ * Cleaning *
+ ************/
+ 
+Yamugase.prototype.clearEmptyGames = function()
+{
+	var game, gameTypeIndex;
+	for(var id in this.games)
+	{
+		game = this.games[id];
+		gameTypeIndex = game.getGameTypeIndex();
+		if (game.expired())
+		{
+			if (this.gameTypes[gameTypeIndex.indexOf(this.game)])
+				delete this.games[id];
+		}
+	}
+	setTimeout(this.clearEmptyGames.bind(this), 10000);
+};
+
+
+
 /**
  * game modes
  */
@@ -183,8 +220,40 @@ Yamugase.prototype.startSinglePlayerGame = function(player, params)
 	game.addPlayer(player);
 	game.start();
 	this.games[game.id] = game;
-	
+
 //	(cardSet, playerName, numberOfPlayers, boardType, roomNo = null)
-	return player.sendImmediate(game.createCharacteristicsMessage(player.id));
+	return player.sendImmediate(game.createCharacteristicsMessage(player));
 };
 
+Yamugase.prototype.joinGame = function(gameTypeIndex, player, params)
+{
+console.log('join game', gameTypeIndex, params);
+	var gameTypeIndex = Yamugase.getGameTypeIndex(params),
+		games = this.gameTypes[gameTypeIndex];
+
+	if (!games || !games.length)
+		return this.joinNewGame(gameTypeIndex, player, params);
+
+	var lastGame = games[games.length-1];
+	if (lastGame.started) return this.joinNewGame(gameTypeIndex, player, params);
+
+	lastGame.addPlayer(player);
+	return player.sendIdentification();
+};
+
+Yamugase.prototype.joinNewGame = function(gameTypeIndex, player, params)
+{
+console.log('joinNewGame', gameTypeIndex, params);
+	var game = new Game(params);
+	game.addPlayer(player);
+	this.gameTypes[gameTypeIndex] = [game];
+console.log('no games found, current games:', this.gameTypes);
+
+	return player.sendIdentification();
+};
+
+Yamugase.getGameTypeIndex = function(params)
+{
+	//override
+	return 'default';
+};

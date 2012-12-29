@@ -1,9 +1,9 @@
 
-UUID = {};
-UUID.CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz';
-UUID.generate = function()
+Yamugase.UUID = {};
+Yamugase.UUID.CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz';
+Yamugase.UUID.generate = function()
 {
-	var chars = UUID.CHARS,
+	var chars = Yamugase.UUID.CHARS,
 		uuid = new Array(36),
 		rnd = 0,
 		r;

@@ -20,8 +20,8 @@ Yamugase.Player.prototype.setName = function(name) { this.name = name; };
 
 Yamugase.Player.prototype.init = function(name)
 {
-	this._internal_id = 'ip_' + UUID.generate();
-	this.id = 'p_' + UUID.generate();
+	this._internal_id = 'ip_' + Yamugase.UUID.generate();
+	this.id = 'p_' + Yamugase.UUID.generate();
 	this.name = name;
 	this.events = [];
 	this.lastPullTimestamp = this.lastActionTimestamp = now();
@@ -47,7 +47,7 @@ console.log('pull expired', this.id,  this.lastPullTimestamp);
 }
 //	if (!this.currentGame) return t - this.lastActionTimestamp > 30000; // 30s inactivity (main screen)
 if (t - this.lastActionTimestamp > config.INACTIVITY_TIMEOUT)
-console.log('inactivity expire', this.id, this.lastActionTimestamp);
+console.log('inactivity expire', this.id, t, this.lastActionTimestamp, config.INACTIVITY_TIMEOUT);
 
 	return (t - this.lastActionTimestamp > config.INACTIVITY_TIMEOUT); // 5s inactivity in a game will kill ya!
 };
@@ -63,6 +63,21 @@ Yamugase.Player.prototype.sendImmediate = function(data)
 console.log('Replying: ', data);
 	if (this.websocket) return this.websocket.write(data);
 	return data;
+};
+
+Yamugase.Player.prototype.sendIdentification = function(data)
+{
+	return this.sendImmediate(
+		JSON.stringify({action: "UserId", data: this._internal_id})
+	);
+};
+
+Yamugase.Player.prototype.pull = function()
+{
+	var res = '{"action": "pull", "data": ['+ this.events.join(',') + ']}';
+	this.events = [];
+	this.lastPullTimestamp = now();
+	return res;
 };
 
 Yamugase.Player.prototype.serialize = function()
