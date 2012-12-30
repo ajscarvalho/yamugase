@@ -23,7 +23,7 @@ Yamugase.Game.prototype.gameOver = function()
 {
 	this.over = true;
 	this.replays = [];
-	this.replayTimer = setTimeout(this.restart, Config.Server.GAME_REPLAY_TIMEOUT);
+	this.replayTimer = setTimeout(this.restart.bind(this), Config.Server.GAME_REPLAY_TIMEOUT);
 };
 
 Yamugase.Game.prototype.addPlayer = function(player)
@@ -144,6 +144,7 @@ console.log('Yamugase.Game.prototype.restart');
 		this.dropPlayer(player);
 	}
 
+	if (this.players.lenght == 0) return this.drop();
 	this.start();
 };
 
