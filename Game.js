@@ -19,11 +19,16 @@ Yamugase.Game.prototype.init = function()
 	this.players = [];
 };
 
+/** returns true when no more players can be added to the game */
+Yamugase.Game.prototype.isFull = function() { return this.players.length >= 4; } // 4 is a good default number, I guess
+
 Yamugase.Game.prototype.gameOver = function() 
 {
+console.log('Yamugase.Game.gameOver');
 	this.over = true;
 	this.replays = [];
 	this.replayTimer = setTimeout(this.restart.bind(this), Config.Server.GAME_REPLAY_TIMEOUT);
+//	this.replayTimer = setTimeout(this.replayAnalysis.bind(this), Config.Server.GAME_REPLAY_TIMEOUT);
 };
 
 Yamugase.Game.prototype.addPlayer = function(player)
@@ -44,7 +49,7 @@ Yamugase.Game.prototype.start = function()
 Yamugase.Game.prototype.getPlayersMessagePart = function()
 {
 	var data = '';
-	for(var p in this.players)
+	for(var p = 0; p < this.players.length; p++)
 	{
 		if (data) data += ',';
 		data += this.players[p].serialize();
@@ -80,7 +85,8 @@ Yamugase.Game.prototype.createCharacteristicsMessage = function(player)
 
 Yamugase.Game.prototype.broadcast = function(message)
 {
-	for(var p in this.players)
+console.log('broadcasting', message);
+	for(var p = 0; p < this.players.length; p++)
 		this.players[p].send(message);
 };
 
@@ -104,13 +110,27 @@ Yamugase.Game.prototype.dropPlayer = function(player)
 
 	this.players = array_contract(this.players, pos);
 
+	player.send(this.createGameDroppedYouMessage());
+	this.broadcast(this.createPlayerDroppedMessage(player));
+	
 	if (this.over) this.replayAnalysis();
+};
+
+Yamugase.Game.prototype.createGameDroppedYouMessage = function()
+{
+	return JSON.stringify( {action: 'GameDroppedYou', data: this.id} );			
+};
+
+Yamugase.Game.prototype.createPlayerDroppedMessage = function(player)
+{
+	return JSON.stringify( {action: 'PlayerDropped', data: player.id} );		
 };
 
 Yamugase.Game.prototype.createGameOverMessage = function(data)
 {
+console.log('created gameover message');
 	return JSON.stringify( {action: 'GameOver', data: data} );	
-}
+};
 
 
 Yamugase.Game.prototype.replay = function(player)
@@ -126,7 +146,7 @@ Yamugase.Game.prototype.replayAnalysis = function()
 {
 console.log('Yamugase.Game.prototype.replayAnalysis', this.replays.length, this.players.length);
 
-	if (this.players.length == 0) this.drop();
+	if (this.players.length == 0) return this.drop();
 	if (this.replays.length == this.players.length) 
 		this.restart();
 };
@@ -137,14 +157,14 @@ console.log('Yamugase.Game.prototype.restart');
 	var player;
 
 	clearTimeout(this.replayTimer);
-	for (var playerPos in this.players)
+	for(var p = 0; p < this.players.length; p++)
 	{
-		player = this.players[playerPos];
+		player = this.players[p];
 		if (this.replays.indexOf(player) >= 0) continue;
 		this.dropPlayer(player);
 	}
 
-	if (this.players.lenght == 0) return this.drop();
+	if (this.players.length == 0) return this.drop();
 	this.start();
 };
 
@@ -152,13 +172,21 @@ console.log('Yamugase.Game.prototype.restart');
 Yamugase.Game.prototype.drop = function()
 {
 console.log('Yamugase.Game.prototype.drop');
-	this.players = null;
-	this.replays = null;
+
+	for(var p = 0; p < this.players.length; p++)
+	{
+		player = this.players[p];
+		this.dropPlayer(player);
+	}
+
+	this.players = [];
+	this.replays = [];
+	clearTimeout(this.replayTimer);
 };
 
 Yamugase.Game.prototype.expired = function()
 {
-	return (this.players == null);
+	return (!this.players || !this.players.length);
 };
  
 Yamugase.Game.prototype.getGameTypeIndex = function()

@@ -18,9 +18,9 @@ require('./EventProcessor');
 Yamugase.prototype.className = 'Yamugase';
 Yamugase.prototype.httpServer = null;
 Yamugase.prototype.websocketServer = null;
-Yamugase.prototype.connections = {};
-Yamugase.prototype.games = {};
-Yamugase.prototype.gameTypes = {};
+Yamugase.prototype.connections = null; // object
+Yamugase.prototype.games = null; // object
+Yamugase.prototype.gameTypes = null; // object
 Yamugase.prototype.config = null;
 
 Yamugase.prototype.init = function(config)
@@ -157,7 +157,7 @@ Yamugase.prototype.clearHttpClients = function()
 Yamugase.prototype.websocketClientDropped = function(websocket)
 {
 console.log('websocketClientDropped');
-	for (var id in this.clients)
+	for (var id in this.connections)
 		if (websocket === this.connections[id].websocket)
 			this.deleteClient(id);
 };
@@ -199,8 +199,12 @@ Yamugase.prototype.clearEmptyGames = function()
 		gameTypeIndex = game.getGameTypeIndex();
 		if (game.expired())
 		{
-			if (this.gameTypes[gameTypeIndex.indexOf(this.game)])
-				delete this.games[id];
+			var gameTypeIndexPosition = this.gameTypes[gameTypeIndex].indexOf(this.game);
+			if (gameTypeIndexPosition > -1)
+			{
+				this.gameTypes[gameTypeIndex] = array_contract(this.gameTypes[gameTypeIndex], gameTypeIndexPosition);
+			}
+			delete this.games[id];
 		}
 	}
 	setTimeout(this.clearEmptyGames.bind(this), 10000);
@@ -231,7 +235,8 @@ console.log('join game', gameTypeIndex, params);
 	var gameTypeIndex = Yamugase.getGameTypeIndex(params),
 		games = this.gameTypes[gameTypeIndex];
 
-	if (!games || !games.length)
+	if (!games) this.gameTypes[gameTypeIndex] = [];
+	if (!games.length)
 		return this.joinNewGame(gameTypeIndex, player, params);
 
 	var lastGame = games[games.length-1];
@@ -246,7 +251,7 @@ Yamugase.prototype.joinNewGame = function(gameTypeIndex, player, params)
 console.log('joinNewGame', gameTypeIndex, params);
 	var game = new Game(params);
 	game.addPlayer(player);
-	this.gameTypes[gameTypeIndex] = [game];
+	this.gameTypes[gameTypeIndex].push(game);
 console.log('no games found, current games:', this.gameTypes);
 
 	return player.sendIdentification();
