@@ -27,6 +27,7 @@ Yamugase.Player.prototype.init = function(name)
 	this.lastPullTimestamp = this.lastActionTimestamp = now();
 };
 
+Yamugase.Player.prototype.getEvents = function() { return this.events; };
 Yamugase.Player.prototype.setCurrentGame = function(game) { this.currentGame = game; };
 
 Yamugase.Player.prototype.leaveGame = function()

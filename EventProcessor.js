@@ -38,7 +38,8 @@ Yamugase.EventProcessor.initializeGame = function(server, player, params)
 	}
 	catch(e) // game_error
 	{
-		player.sendImmediate(e);
+		if ("string" == typeof(e)) player.sendImmediate(e);
+		console.log("Error on Yamugase.EventProcessor.initializeGame", e);
 	}
 };
 

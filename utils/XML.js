@@ -58,6 +58,8 @@ Yamugase.XML.convertFromJSO = function(data)
 
 Yamugase.XML.to_val = function(data)
 {
+	if (!data) return '';
+
 	var xml = '';
 	var listNodeName = data.objectClass ? data.objectClass : 'ListItem';
 

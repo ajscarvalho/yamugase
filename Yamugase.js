@@ -66,14 +66,17 @@ Yamugase.prototype.httpRequestHandler = function(request, response)
 	if (request.url.match(/\?xml$/))
 	{
 		contentType = 'text/xml';
-		if (action == 'pull') events = Yamugase.XML.convertFromJSONList(player.getEvents());
-		else events = Yamugase.XML.convertFromJSONResponse(res);
+//		if (action == 'pull') events = Yamugase.XML.convertFromJSONList(player.getEvents());
+//		else
+console.log(res);
+		events = Yamugase.XML.convertFromJSONResponse(res);
 	}
 	else
 	{
 		contentType = 'application/json‎';
-		if (action == 'pull') events = '[' + player.getEvents().join(',') + ']';
-		else events = res;
+//		if (action == 'pull') events = '[' + player.getEvents().join(',') + ']';
+//		else 
+		events = res;
 	}
 
 	response.writeHead(200, {'Content-Type': contentType});
@@ -172,8 +175,8 @@ console.log('dropped client', id);
 	} catch(e) {};
 
 	player.websocket = null; // websocket connection
-	player.events = null; // for http pooling
 	if (player.currentGame) player.currentGame.dropPlayer(player); // drop player from game
+	player.events = null; // for http pooling
 	player.currentGame = null;
 	delete this.connections[id];
 };
@@ -199,10 +202,15 @@ Yamugase.prototype.clearEmptyGames = function()
 		gameTypeIndex = game.getGameTypeIndex();
 		if (game.expired())
 		{
-			var gameTypeIndexPosition = this.gameTypes[gameTypeIndex].indexOf(this.game);
-			if (gameTypeIndexPosition > -1)
+			var gamesByType = this.gameTypes[gameTypeIndex];
+			if (gamesByType)
 			{
-				this.gameTypes[gameTypeIndex] = array_contract(this.gameTypes[gameTypeIndex], gameTypeIndexPosition);
+console.log('clearEmptyGames', gameTypeIndex, gamesByType);
+				var gameTypeIndexPosition = gamesByType.indexOf(this.game);
+				if (gameTypeIndexPosition > -1)
+				{
+					this.gameTypes[gameTypeIndex] = array_contract(gamesByType, gameTypeIndexPosition);
+				}
 			}
 			delete this.games[id];
 		}
@@ -235,7 +243,7 @@ console.log('join game', gameTypeIndex, params);
 	var gameTypeIndex = Yamugase.getGameTypeIndex(params),
 		games = this.gameTypes[gameTypeIndex];
 
-	if (!games) this.gameTypes[gameTypeIndex] = [];
+	if (!games) games = this.gameTypes[gameTypeIndex] = [];
 	if (!games.length)
 		return this.joinNewGame(gameTypeIndex, player, params);
 
