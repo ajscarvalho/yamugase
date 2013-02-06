@@ -8,9 +8,9 @@ Yamugase = function(){ this.init(); };
 
 require('./utils/XML');
 require('./utils/UUID');
-require('./utils/error');
 
 
+require('./GameError');
 require('./Player');
 require('./Game');
 require('./EventProcessor');
@@ -21,6 +21,7 @@ Yamugase.prototype.websocketServer = null;
 Yamugase.prototype.connections = null; // object
 Yamugase.prototype.games = null; // object
 Yamugase.prototype.gameTypes = null; // object
+Yamugase.prototype.friendGames = null; // object
 Yamugase.prototype.config = null;
 
 Yamugase.prototype.init = function(config)
@@ -28,6 +29,7 @@ Yamugase.prototype.init = function(config)
 	this.connections = {};
 	this.games = {};
 	this.gameTypes = {};
+	this.friendGames = {};
 
 	this.config = config;
 
@@ -169,13 +171,15 @@ Yamugase.prototype.deleteClient = function(id)
 {
 console.log('dropped client', id);
 	var player = this.connections[id];
+	if (player.currentGame) player.currentGame.dropPlayer(player); // drop player from game
+	
 	if (player.websocket) try { 
 		player.websocket.player = null; // remove double link reference
 		player.websocket.close(); // try closing the socket
 	} catch(e) {};
 
 	player.websocket = null; // websocket connection
-	if (player.currentGame) player.currentGame.dropPlayer(player); // drop player from game
+//	if (player.currentGame) player.currentGame.dropPlayer(player); // drop player from game
 	player.events = null; // for http pooling
 	player.currentGame = null;
 	delete this.connections[id];
@@ -183,7 +187,7 @@ console.log('dropped client', id);
 
 Yamugase.prototype.addClient = function(player)
 {
-	if(this.connections[player._internal_id]) return player.send(game_error('DuplicatePlayer'));
+	if(this.connections[player._internal_id]) return player.send(GameError.createErrorMessage(GameError.PLAYER_DUPLICATE));
 	this.connections[player._internal_id] = player;
 };
 
@@ -202,6 +206,8 @@ Yamugase.prototype.clearEmptyGames = function()
 		gameTypeIndex = game.getGameTypeIndex();
 		if (game.expired())
 		{
+
+			// delete reference from gameTypes
 			var gamesByType = this.gameTypes[gameTypeIndex];
 			if (gamesByType)
 			{
@@ -212,6 +218,15 @@ console.log('clearEmptyGames', gameTypeIndex, gamesByType);
 					this.gameTypes[gameTypeIndex] = array_contract(gamesByType, gameTypeIndexPosition);
 				}
 			}
+
+			// delete reference from friendGames
+			var room = this.friendGames.indexOf(this.game);
+			if (room > -1)
+			{
+				this.friendGames[room] = null;
+				delete this.friendGames[room];
+			}
+			
 			delete this.games[id];
 		}
 	}
@@ -262,6 +277,22 @@ console.log('joinNewGame', gameTypeIndex, params);
 	this.gameTypes[gameTypeIndex].push(game);
 console.log('no games found, current games:', this.gameTypes);
 
+	return player.sendIdentification();
+};
+
+Yamugase.prototype.joinFriendGame = function(roomNo, player, params)
+{
+	var game = this.friendGames[roomNo];
+	if (!game)
+	{
+		game = new Game(params);
+		game.addPlayer(player);
+		this.friendGames[roomNo] = game;
+		return player.sendIdentification();
+	}
+	else if (game.started) return player.sendImmediate(GameError.createErrorMessage(GameError.GAME_ALREADY_STARTED));
+
+	game.addPlayer(player);
 	return player.sendIdentification();
 };
 

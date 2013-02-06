@@ -15,6 +15,8 @@ Yamugase.Player.prototype.currentGame = null; // game being played
 Yamugase.Player.prototype.lastActionTimestamp = 0; // last interaction with player
 Yamugase.Player.prototype.lastPullTimestamp = 0; // last interaction with player
 
+Yamugase.Player.prototype.registered = false;
+
 Yamugase.Player.prototype.getId = function() { return this.id; };
 Yamugase.Player.prototype.setName = function(name) { this.name = name; };
 
@@ -34,6 +36,11 @@ Yamugase.Player.prototype.leaveGame = function()
 {
 	if (!this.currentGame) return;
 	this.currentGame.dropPlayer(this);
+};
+
+Yamugase.Player.prototype.updateLastAction = function()
+{
+	this.lastActionTimestamp = now();
 };
 
 /* TODO move to server? */

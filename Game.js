@@ -97,7 +97,7 @@ Yamugase.Game.prototype.serialize = function()
 
 Yamugase.Game.prototype.processAction = function(server, player, action, params)
 {
-	if (!this.started) return player.sendImmediate(game_error("GameNotStarted"));
+	if (!this.started) return player.sendImmediate(GameError.createErrorMessage(GameError.GAME_NOT_STARTED));
 	
 	return null; // all ok - no messages to player 
 // "the Game::processAction function is meant to be overriden";
