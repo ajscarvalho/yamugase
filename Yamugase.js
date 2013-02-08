@@ -103,8 +103,8 @@ Yamugase.prototype.websocketConnected = function(websocket)
 console.log('websocket connected');
 //	websocket.addListener('connect', this.websocketConnectHandler.bind(this));
 	websocket.addListener('data', this.websocketDataHandler.bind(this, websocket));
-	websocket.addListener('close', this.websocketCloseHandler.bind(this));
-	websocket.addListener('error', this.websocketErrorHandler.bind(this));
+	websocket.addListener('close', this.websocketCloseHandler.bind(this, websocket));
+	websocket.addListener('error', this.websocketErrorHandler.bind(this, websocket));
 };
 /*
 Yamugase.prototype.websocketConnectHandler = function(websocket)

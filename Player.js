@@ -63,7 +63,7 @@ console.log('inactivity expire', this.id, t, this.lastActionTimestamp, config.IN
 Yamugase.Player.prototype.send = function(data)
 {
 	if (this.websocket) return this.websocket.write(data);
-	this.events.push(data);
+	if (this.events) this.events.push(data); // player might have dropped
 };
 
 Yamugase.Player.prototype.sendImmediate = function(data)
