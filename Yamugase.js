@@ -220,13 +220,13 @@ console.log('clearEmptyGames', gameTypeIndex, gamesByType);
 			}
 
 			// delete reference from friendGames
-			var room = this.friendGames.indexOf(this.game);
-			if (room > -1)
+			var room = this.game.roomNo;
+			if (room && this.friendGames[room])
 			{
 				this.friendGames[room] = null;
 				delete this.friendGames[room];
 			}
-			
+
 			delete this.games[id];
 		}
 	}
@@ -285,7 +285,12 @@ Yamugase.prototype.joinFriendGame = function(roomNo, player, params)
 	var game = this.friendGames[roomNo];
 	if (!game)
 	{
-		game = new Game(params);
+		try {
+console.log('no game at room', roomNo);
+			game = new Game(params);
+		} catch(e) {
+			throw GameError.createErrorMessage(GameError.INVALID_GAME_ROOM);
+		}
 		game.addPlayer(player);
 		this.friendGames[roomNo] = game;
 		return player.sendIdentification();
