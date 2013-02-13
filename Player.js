@@ -73,6 +73,11 @@ console.log('Replying: ', data);
 	return data;
 };
 
+Yamugase.Player.prototype.sendImmediateOK = function(data)
+{
+	this.sendImmediate(JSON.stringify({action: "OK", data: "OK"}));
+};
+
 Yamugase.Player.prototype.sendIdentification = function(data)
 {
 	return this.sendImmediate(
