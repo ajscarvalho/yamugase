@@ -220,7 +220,7 @@ console.log('clearEmptyGames', gameTypeIndex, gamesByType);
 			}
 
 			// delete reference from friendGames
-			var room = this.game.roomNo;
+			var room = game.roomNo;
 			if (room && this.friendGames[room])
 			{
 				this.friendGames[room] = null;
