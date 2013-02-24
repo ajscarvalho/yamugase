@@ -53,7 +53,8 @@ Yamugase.prototype.httpRequestHandler = function(request, response)
 	var params = request.url.replace(/\?.*/, '').replace(/^\/+/, '').replace(/\/+$/, '').split('/'),
 		action = params.shift(),
 		id = params.shift(),
-		player = this.connections[id];
+		player = this.connections[id],
+		ajaxAccessControl = '*'; // or request host name if it matches some white list
 
 	if (!player) this.addClient(player = new Player());
 
@@ -61,7 +62,7 @@ Yamugase.prototype.httpRequestHandler = function(request, response)
 	if (null == res)
 	{
 		console.warn('null value returned from action', action, params);
-		response.writeHead(200);
+		response.writeHead(200, {'Access-Control-Allow-Origin': ajaxAccessControl});
 		return;
 	}
 
@@ -81,7 +82,7 @@ console.log(res);
 		events = res;
 	}
 
-	response.writeHead(200, {'Content-Type': contentType});
+	response.writeHead(200, {'Content-Type': contentType, 'Access-Control-Allow-Origin': ajaxAccessControl});
 //console.log("====\n" + events + "\n====");
 	response.end(events);
 };
@@ -199,6 +200,7 @@ Yamugase.prototype.addClient = function(player)
  
 Yamugase.prototype.clearEmptyGames = function()
 {
+console.log('clearEmptyGames');
 	var game, gameTypeIndex;
 	for(var id in this.games)
 	{
