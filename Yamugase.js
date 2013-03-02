@@ -54,7 +54,20 @@ Yamugase.prototype.httpRequestHandler = function(request, response)
 		action = params.shift(),
 		id = params.shift(),
 		player = this.connections[id],
-		ajaxAccessControl = '*'; // or request host name if it matches some white list
+		ajaxAccessControl = '*', // or request host name if it matches some white list
+		returnXML = request.url.match(/\?xml$/),
+		contentType = returnXML ? 'text/xml' : 'application/json‎',
+		events;
+
+	for (var i = 0, l = params.length; i < l; i++)
+		params[i] = decodeURIComponent(params[i].replace(/\+/g, ' '));
+
+	if (id && !player) 
+	{
+		response.writeHead(403, {'Content-Type': contentType, 'Access-Control-Allow-Origin': ajaxAccessControl});
+		response.end();
+		return;
+	}
 
 	if (!player) this.addClient(player = new Player());
 
@@ -66,21 +79,7 @@ Yamugase.prototype.httpRequestHandler = function(request, response)
 		return;
 	}
 
-	if (request.url.match(/\?xml$/))
-	{
-		contentType = 'text/xml';
-//		if (action == 'pull') events = Yamugase.XML.convertFromJSONList(player.getEvents());
-//		else
-console.log(res);
-		events = Yamugase.XML.convertFromJSONResponse(res);
-	}
-	else
-	{
-		contentType = 'application/json‎';
-//		if (action == 'pull') events = '[' + player.getEvents().join(',') + ']';
-//		else 
-		events = res;
-	}
+	events = returnXML ? Yamugase.XML.convertFromJSONResponse(res) : res;
 
 	response.writeHead(200, {'Content-Type': contentType, 'Access-Control-Allow-Origin': ajaxAccessControl});
 //console.log("====\n" + events + "\n====");
